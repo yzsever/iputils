@@ -113,9 +113,13 @@ endif
 endif
 
 # -------------------------------------
+#使用变量可以大大简化makefile的书写，使用变量的时候在变量之前加$,如下面的$(IPV4_TARGETS),而下面第一句=后面的tracepath则为变量中的变量
+#makefile中用变量构造变量的值有三种方式：1、用“=” 2、用“=：”可以避免递归定义的危险，前的定义的变量不能使用后面定义的变量 
+#3、“？=”如果之前变量的值没有定义过则可以定义，定义过则无法定义。
 IPV4_TARGETS=tracepath ping clockdiff rdisc arping tftpd rarpd
 IPV6_TARGETS=tracepath6 traceroute6 ping6
 TARGETS=$(IPV4_TARGETS) $(IPV6_TARGETS)
+# taggets后面的是所要生成的目标文件
 
 CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)
 LDLIBS=$(LDLIB) $(ADDLIB)
@@ -147,6 +151,7 @@ $(TARGETS): %: %.o
 # 在$(patsubst %.o,%,$@ )中，patsubst把目标中的变量符合后缀是.o的全部删除,  DEF_ping
 # $(patsubst %.o,%,test1.o test2.o)执行结果是test1,test2
 # LINK.o把.o文件链接在一起的命令行,缺省值是$(CC) $(LDFLAGS) $(TARGET_ARCH)
+#函数patsubst:匹配替换，有三个参数。第一个是一个需要匹配的式样，第二个表示用什么来替换它，第三个是一个需要被处理的由空格分隔的列表。
 #
 #
 #以ping为例，翻译为：e
@@ -162,6 +167,7 @@ LIB_arping = $(LIB_SYSFS) $(LIB_CAP) $(LIB_IDN)
 
 ifneq ($(ARPING_DEFAULT_DEVICE),)
 DEF_arping += -DDEFAULT_DEVICE=\"$(ARPING_DEFAULT_DEVICE)\"
+#“+=”表示给变量追加值。
 endif
 
 # clockdiff
@@ -211,7 +217,7 @@ tftpd.o tftpsubs.o: tftp.h
 # -------------------------------------
 # ninfod
 ninfod:
-	@set -e; \
+	@set -e; \    #这边的\表示换行，是为了便于makefile的读和理解
 		if [ ! -f ninfod/Makefile ]; then \
 			cd ninfod; \
 			./configure; \
