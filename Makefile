@@ -297,6 +297,7 @@ snapshot:
 #如果UNAME_N和pleiades的十六进制不等，提示错误信息后退出。
 	@if [ x"$(UNAME_N)" != x"pleiades" ]; then echo "Not authorized to advance snapshot"; exit 1; fi
 #将TAG变量的内容重定向到RELNOTES.NEW文档中。
+#>表示重定向 >>表示追加
 	@echo "[$(TAG)]" > RELNOTES.NEW
 #输出一个空行到RELNOTES.NEW文档中。
 	@echo >>RELNOTES.NEW
@@ -308,7 +309,7 @@ snapshot:
 	@cat RELNOTES >> RELNOTES.NEW
 #重命名操作，RELNOTES.NEW命名为RELNOTES
 	@mv RELNOTES.NEW RELNOTES
-
+#将iputils.spec中的^%define ssdate .*替换成%define ssdate $(DATE)重定向到iputils.spec.tmp
 	@sed -e "s/^%define ssdate .*/%define ssdate $(DATE)/" iputils.spec > iputils.spec.tmp
 #重命名
 	@mv iputils.spec.tmp iputils.spec
