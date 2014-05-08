@@ -68,7 +68,7 @@ LDLIB=
 #下面这句话涉及到了两个重要的函数，filter过滤函数，和if条件判断函数，if与ifeq表达式功能相同
 #$(filter<pattern...>,<text>)  以<pattern>模式过滤<text>字符串中的单词，保留符合模式的。 下面语句就是过滤出$(1)中的静态变量
 #$(if <condition>,<then-part>,<else-part>) 表达式为真，执行then-part,否则执行else-part
-#下面语句的解释为，如果$(1)中的静态变量和$(LDFLAG_STATIC)相同，则讲$(2)和$(LDFLAG_DYNAMIC)赋值给FUNC_LIB，否则用$(2)赋值
+#下面语句的解释为，如果$(1)中的静态变量和$(LDFLAG_STATIC)相同，则将$(2)和$(LDFLAG_DYNAMIC)赋值给FUNC_LIB，否则用$(2)赋值
 FUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
@@ -124,7 +124,7 @@ endif
 
 # -------------------------------------
 #使用变量可以大大简化makefile的书写，使用变量的时候在变量之前加$,如下面的$(IPV4_TARGETS),而下面第一句=后面的tracepath则为变量中的变量
-#makefile中用变量构造变量的值有三种方式：1、用“=” 2、用“=：”可以避免递归定义的危险，前的定义的变量不能使用后面定义的变量 
+#makefile中用变量构造变量的值有三种方式：1、用“=” 2、用“：=”可以避免递归定义的危险，前的定义的变量不能使用后面定义的变量 
 #3、“？=”如果之前变量的值没有定义过则可以定义，定义过则无法定义。
 IPV4_TARGETS=tracepath ping clockdiff rdisc arping tftpd rarpd
 IPV6_TARGETS=tracepath6 traceroute6 ping6
@@ -134,12 +134,18 @@ TARGETS=$(IPV4_TARGETS) $(IPV6_TARGETS)
 CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)
 LDLIBS=$(LDLIB) $(ADDLIB)
 
+#$(shell <commmand>,<parm1>,<parm2>,...) <command>表示需要执行的shell命令，后面的<parm1>...为该shell命令的参数\
+该函数的返回值为执行的shell命令的输出结果
 UNAME_N:=$(shell uname -n)
+#赋值UNAME_N网络主机的名称
 LASTTAG:=$(shell git describe HEAD | sed -e 's/-.*//')
+#将HEAD中的-.*替换为/
 TODAY=$(shell date +%Y/%m/%d)
+#按指定的格式%Y/%m/%d赋值给TODAY
 DATE=$(shell date --date $(TODAY) +%Y%m%d)
+#将TODAY中的内容以%Y%m%d赋值给DATE
 TAG:=$(shell date --date=$(TODAY) +s%Y%m%d)
-
+#将TODAY中的以字符串显示的时间赋值给TAG
 
 # -------------------------------------
 .PHONY: all ninfod clean distclean man html check-kernel modules snapshot
@@ -162,8 +168,6 @@ $(TARGETS): %: %.o
 # $(patsubst %.o,%,test1.o test2.o)执行结果是test1,test2
 # LINK.o把.o文件链接在一起的命令行,缺省值是$(CC) $(LDFLAGS) $(TARGET_ARCH)
 #函数patsubst:匹配替换，有三个参数。第一个是一个需要匹配的式样，第二个表示用什么来替换它，第三个是一个需要被处理的由空格分隔的列表。
-#
-#
 #以ping为例，翻译为：e
 # gcc -O3 -fno-strict-aliasing -Wstrict-prototypes -Wall -g -D_GNU_SOURCE    -c ping.c -DCAPABILITIES   -o ping.o
 #gcc   ping.o ping_common.o -lcap    -o ping
