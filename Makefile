@@ -41,8 +41,10 @@ WITHOUT_IFADDRS=no
 ARPING_DEFAULT_DEVICE=
 
 # GNU TLS library for ping6 [yes|no|static]
+#允许ping6使用TLS加密的函数库
 USE_GNUTLS=yes
 # Crypto library for ping6 [shared|static]
+#和ping6共享Crypto库，Crypto库是一个密码库
 USE_CRYPTO=shared
 # Resolv library for ping6 [yes|static]
 USE_RESOLV=yes
@@ -58,17 +60,25 @@ ENABLE_RDISC_SERVER=no
 #-Wstrict-prototypes: 如果函数的声明或定义没有指出参数类型，编译器就发出警告
 CCOPT=-fno-strict-aliasing -Wstrict-prototypes -Wall -g
 CCOPTOPT=-O3
+#使用3级优化
 GLIBCFIX=-D_GNU_SOURCE
 DEFINES=
 LDLIB=
 
+#下面这句话涉及到了两个重要的函数，filter过滤函数，和if条件判断函数，if与ifeq表达式功能相同
+#$(filter<pattern...>,<text>)  以<pattern>模式过滤<text>字符串中的单词，保留符合模式的。 下面语句就是过滤出$(1)中的静态变量
+#$(if <condition>,<then-part>,<else-part>) 表达式为真，执行then-part,否则执行else-part
+#下面语句的解释为，如果$(1)中的静态变量和$(LDFLAG_STATIC)相同，则讲$(2)和$(LDFLAG_DYNAMIC)赋值给FUNC_LIB，否则用$(2)赋值
 FUNC_LIB = $(if $(filter static,$(1)),$(LDFLAG_STATIC) $(2) $(LDFLAG_DYNAMIC),$(2))
 
 # USE_GNUTLS: DEF_GNUTLS, LIB_GNUTLS
 # USE_CRYPTO: LIB_CRYPTO
+#下面是条件判断语句，ifneq用法是：如果后面的两个参数的值不相同，则表达式为真，执行语句
 ifneq ($(USE_GNUTLS),no)
 	LIB_CRYPTO = $(call FUNC_LIB,$(USE_GNUTLS),$(LDFLAG_GNUTLS))
+#call函数为用户创建一个自定义的函数，FUNC_LIB中的参数被$(USE_GNUTLS),$(LDFLAG_GNUTLS)取代
 	DEF_CRYPTO = -DUSE_GNUTLS
+#由于之前已给USE_GNUTS赋值为yes，所以可以执行库的调用
 else
 	LIB_CRYPTO = $(call FUNC_LIB,$(USE_CRYPTO),$(LDFLAG_CRYPTO))
 endif
