@@ -19,6 +19,7 @@ LDFLAG_DYNAMIC=-Wl,-Bdynamic
 #指定加载库
 LDFLAG_CAP=-lcap
 LDFLAG_GNUTLS=-lgnutls-openssl
+#libgnutls-openssl是一个libtool库文件
 LDFLAG_CRYPTO=-lcrypto
 LDFLAG_IDN=-lidn
 LDFLAG_RESOLV=-lresolv
@@ -134,8 +135,7 @@ TARGETS=$(IPV4_TARGETS) $(IPV6_TARGETS)
 CFLAGS=$(CCOPTOPT) $(CCOPT) $(GLIBCFIX) $(DEFINES)
 LDLIBS=$(LDLIB) $(ADDLIB)
 
-#$(shell <commmand>,<parm1>,<parm2>,...) <command>表示需要执行的shell命令，后面的<parm1>...为该shell命令的参数\
-该函数的返回值为执行的shell命令的输出结果
+#$(shell <commmand>,<parm1>,<parm2>,...) <command>表示需要执行的shell命令，后面的<parm1>...为该shell命令的参数该函数的返回值为执行的shell命令的输出结果
 UNAME_N:=$(shell uname -n)
 #赋值UNAME_N网络主机的名称
 LASTTAG:=$(shell git describe HEAD | sed -e 's/-.*//')
@@ -185,16 +185,19 @@ DEF_arping += -DDEFAULT_DEVICE=\"$(ARPING_DEFAULT_DEVICE)\"
 endif
 
 # clockdiff
+# 对函数clockdiff进行设置
 DEF_clockdiff = $(DEF_CAP)
 LIB_clockdiff = $(LIB_CAP)
 
 # ping / ping6
+# 为ping/ping6指定库
 DEF_ping_common = $(DEF_CAP) $(DEF_IDN)
 DEF_ping  = $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS)
 LIB_ping  = $(LIB_CAP) $(LIB_IDN)
 DEF_ping6 = $(DEF_CAP) $(DEF_IDN) $(DEF_WITHOUT_IFADDRS) $(DEF_ENABLE_PING6_RTHDR) $(DEF_CRYPTO)
 LIB_ping6 = $(LIB_CAP) $(LIB_IDN) $(LIB_RESOLV) $(LIB_CRYPTO)
 
+#规定目标文件的依赖关系
 ping: ping_common.o
 ping6: ping_common.o
 ping.o ping_common.o: ping_common.h
@@ -225,6 +228,7 @@ DEF_tftpd =
 DEF_tftpsubs =
 LIB_tftpd =
 
+#指明tftpd和tftpd.o,subs.o的依赖文件
 tftpd: tftpsubs.o
 tftpd.o tftpsubs.o: tftp.h
 
@@ -232,44 +236,57 @@ tftpd.o tftpsubs.o: tftp.h
 # ninfod
 ninfod:
 	@set -e; \    #这边的\表示换行，是为了便于makefile的读和理解
+#如果文件夹ninfod中没有Makefile文件，则进入文件夹执行configure生成Makefile，如果有则退出文件夹回到上层目录
 		if [ ! -f ninfod/Makefile ]; then \
 			cd ninfod; \
 			./configure; \
 			cd ..; \
 		fi; \
+#
 		$(MAKE) -C ninfod
-
+#表示进入ninfod目录执行makefile
 # -------------------------------------
 # modules / check-kernel are only for ancient kernels; obsolete
+#检查内核
+#如果如果内核头文件为空，则提示重新设置
 check-kernel:
 ifeq ($(KERNEL_INCLUDE),)
 	@echo "Please, set correct KERNEL_INCLUDE"; false
 else
+#如果找不到autoconf.h不是普通文件，提示错误，重新设置
 	@set -e; \
 	if [ ! -r $(KERNEL_INCLUDE)/linux/autoconf.h ]; then \
 		echo "Please, set correct KERNEL_INCLUDE"; false; fi
 endif
 
+#进入Modules执行Makefile
 modules: check-kernel
 	$(MAKE) KERNEL_INCLUDE=$(KERNEL_INCLUDE) -C Modules
 
 # -------------------------------------
+#生成man的帮助文档
 man:
 	$(MAKE) -C doc man
 
+#生成html的帮助文档
 html:
 	$(MAKE) -C doc html
 
 clean:
+#删除Targets中的所有.o文件
 	@rm -f *.o $(TARGETS)
+#执行Modules中的clean
 	@$(MAKE) -C Modules clean
+#执行doc中的clean
 	@$(MAKE) -C doc clean
 	@set -e; \
+#查看ninfod中是否有makefile文件，如果有，执行其中的clean
 		if [ -f ninfod/Makefile ]; then \
 			$(MAKE) -C ninfod clean; \
 		fi
 
 distclean: clean
+#查看ninfod中是否有makefile文件，如果有，清除所有生成的文件
 	@set -e; \
 		if [ -f ninfod/Makefile ]; then \
 			$(MAKE) -C ninfod distclean; \
@@ -277,19 +294,33 @@ distclean: clean
 
 # -------------------------------------
 snapshot:
+#如果UNAME_N和pleiades的十六进制不等，提示错误信息后退出。
 	@if [ x"$(UNAME_N)" != x"pleiades" ]; then echo "Not authorized to advance snapshot"; exit 1; fi
+#将TAG变量的内容重定向到RELNOTES.NEW文档中。
 	@echo "[$(TAG)]" > RELNOTES.NEW
+#输出一个空行到RELNOTES.NEW文档中。
 	@echo >>RELNOTES.NEW
+#将git log和git shortlog的输出信息重定向到RELOTES.NEW文档里。
 	@git log --no-merges $(LASTTAG).. | git shortlog >> RELNOTES.NEW
+
 	@echo >> RELNOTES.NEW
+#将RELNOTES里的内容重定向的RELNOTES.NEW文档里。	
 	@cat RELNOTES >> RELNOTES.NEW
+#重命名操作，RELNOTES.NEW命名为RELNOTES
 	@mv RELNOTES.NEW RELNOTES
+
 	@sed -e "s/^%define ssdate .*/%define ssdate $(DATE)/" iputils.spec > iputils.spec.tmp
+#重命名
 	@mv iputils.spec.tmp iputils.spec
+#将TAG变量中的内容以"static char SNAPSHOT[] = \"$(TAG)\"的形式重定向到SNAPSHOT.h文档中
 	@echo "static char SNAPSHOT[] = \"$(TAG)\";" > SNAPSHOT.h
+#生成snapshot的帮助文档
 	@$(MAKE) -C doc snapshot
 	@$(MAKE) man
+#上交修改信息
 	@git commit -a -m "iputils-$(TAG)"
+#创建带有说明的标签，GPG来签署标签（需要有私钥，用-s）
 	@git tag -s -m "iputils-$(TAG)" $(TAG)
+#将iputils_$(TAG)打包
 	@git archive --format=tar --prefix=iputils-$(TAG)/ $(TAG) | bzip2 -9 > ../iputils-$(TAG).tar.bz2
 
